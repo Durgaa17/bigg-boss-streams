@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bigg Boss Tamil 9 – Live Streams</title>
+  <style>
+    :root {
+      --bg: #121212;
+      --card: #1e1e1e;
+      --text: #e0e0e0;
+      --accent: #ff6b35;
+      --border: #333;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', sans-serif;
+      padding: 1rem;
+      line-height: 1.6;
+    }
+    .container { max-width: 800px; margin: 0 auto; }
+    header {
+      text-align: center;
+      padding: 1.5rem 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1.5rem;
+    }
+    h1 { font-size: 1.8rem; color: var(--accent); margin-bottom: 0.5rem; }
+    .subtitle { font-size: 0.95rem; color: #aaa; }
+    .episode {
+      background: var(--card);
+      padding: 1.2rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border);
+    }
+    .episode h2 { font-size: 1.3rem; margin-bottom: 0.5rem; }
+    .meta { font-size: 0.9rem; color: #ccc; margin-bottom: 1rem; }
+    .meta a { color: var(--accent); text-decoration: none; }
+    .meta a:hover { text-decoration: underline; }
+    .streams { display: flex; flex-direction: column; gap: 0.8rem; }
+    .stream-btn {
+      background: #2a2a2a;
+      border: 1px solid var(--border);
+      padding: 0.9rem;
+      border-radius: 10px;
+      font-size: 1rem;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .stream-btn:hover { background: #333; border-color: var(--accent); }
+    .stream-btn .label { font-weight: 600; }
+    .stream-btn .host {
+      font-size: 0.85rem;
+      color: #aaa;
+      background: #333;
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+    }
+    .dailymotion .host { color: #00aaff; }
+    .okru .host { color: #ff8800; }
+    .player .host { color: #4caf50; }
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      color: #888;
+      font-style: italic;
+    }
+    .error {
+      background: #3d1f1f;
+      color: #ff6b6b;
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid #5a2a2a;
+      text-align: center;
+    }
+    footer {
+      text-align: center;
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.8rem;
+      color: #666;
+    }
+    @media (min-width: 600px) {
+      .streams { flex-direction: row; }
+      .stream-btn { flex: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Bigg Boss Tamil 9</h1>
+      <p class="subtitle">Auto-Updated Daily • v2.0b</p>
+    </header>
+
+    <div id="content">
+      <div class="loading">Fetching latest episode...</div>
+    </div>
+
+    <footer>
+      Updated via GitHub Actions • <span id="last-updated">—</span>
+    </footer>
+  </div>
+
+  <script>
+    const STREAMS_URL = 'streams.json';
+    const contentDiv = document.getElementById('content');
+    const lastUpdatedSpan = document.getElementById('last-updated');
+
+    function getHostClass(url) {
+      if (url.includes('dailymotion')) return 'dailymotion';
+      if (url.includes('ok.ru')) return 'okru';
+      if (url.includes('player')) return 'player';
+      return '';
+    }
+
+    function getHostName(url) {
+      if (url.includes('dailymotion')) return 'Dailymotion';
+      if (url.includes('ok.ru')) return 'OK.ru';
+      if (url.includes('player')) return 'Player';
+      return 'Stream';
+    }
+
+    async function loadStreams() {
+      try {
+        const res = await fetch(STREAMS_URL + '?t=' + Date.now());
+        if (!res.ok) throw new Error('Failed to load');
+        const data = await res.json();
+
+        if (data.error) throw new Error(data.error);
+
+        const date = data.date || new Date().toLocaleDateString('en-GB');
+        lastUpdatedSpan.textContent = `Last updated: ${date}`;
+
+        const html = `
+          <div class="episode">
+            <h2>${data.episode || 'Latest Episode'}</h2>
+            <div class="meta">
+              <a href="${data.link}" target="_blank">View on 1TamilCrow</a>
+            </div>
+            <div class="streams">
+              ${data.streams.map((url, i) => `
+                <button class="stream-btn ${getHostClass(url)}" onclick="window.open('${url}', '_blank')">
+                  <span class="label">Play Stream ${i + 1}</span>
+                  <span class="host">${getHostName(url)}</span>
+                </button>
+              `).join('')}
+            </div>
+          </div>
+        `;
+
+        contentDiv.innerHTML = html;
+      } catch (err) {
+        contentDiv.innerHTML = `<div class="error">Error: ${err.message}. Check streams.json or try later.</div>`;
+      }
+    }
+
+    // Load on start
+    loadStreams();
+
+    // Auto-refresh every 5 minutes
+    setInterval(loadStreams, 5 * 60 * 1000);
+  </script>
+</body>
+</html>
