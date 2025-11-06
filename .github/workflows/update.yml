@@ -1,0 +1,23 @@
+# .github/workflows/update.yml
+name: Update Bigg Boss Streams
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Daily at 12:00 AM UTC
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run scraper
+        run: |
+          chmod +x scrape.sh
+          ./scrape.sh
+
+      - name: Commit & push if changed
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Update streams – $(date '+%Y-%m-%d')"
+          file_pattern: streams.json
