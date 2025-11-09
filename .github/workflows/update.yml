@@ -2,7 +2,13 @@
 name: Update Bigg Boss Streams
 on:
   schedule:
-    - cron: '30 17 * * *'  # Daily at 5:30 PM UTC (1:30 AM GMT+8 next day)
+    # Original: 1:30 AM (GMT+8) = 5:30 PM UTC
+    - cron: '30 17 * * *'
+    # Additional checks:
+    - cron: '0 4 * * *'    # 12:00 PM GMT+8
+    - cron: '0 7 * * *'    # 3:00 PM GMT+8  
+    - cron: '0 10 * * *'   # 6:00 PM GMT+8
+    - cron: '0 13 * * *'   # 9:00 PM GMT+8
   workflow_dispatch:
 
 jobs:
