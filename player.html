@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bigg Boss 9 Tamil - Stream Player</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header .episode-info {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .header .date {
+            font-size: 0.9rem;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+
+        .player-section {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            margin-bottom: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 10px;
+        }
+
+        .stream-list {
+            display: grid;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stream-item {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stream-item:hover {
+            background: #e3f2fd;
+            border-color: #2196f3;
+            transform: translateY(-2px);
+        }
+
+        .stream-item.active {
+            background: #e3f2fd;
+            border-color: #2196f3;
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+        }
+
+        .stream-number {
+            background: #2196f3;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .stream-info {
+            flex: 1;
+        }
+
+        .stream-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .stream-url {
+            font-size: 0.8rem;
+            color: #666;
+            word-break: break-all;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .source-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .source-link a {
+            color: white;
+            text-decoration: none;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+
+        .source-link a:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .header .episode-info {
+                font-size: 1rem;
+            }
+            
+            .player-section {
+                padding: 15px;
+            }
+            
+            .stream-item {
+                padding: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 1.7rem;
+            }
+            
+            .stream-item {
+                flex-direction: column;
+                text-align: center;
+                gap: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 Bigg Boss 9 Tamil</h1>
+            <div class="episode-info" id="episodeTitle">Loading episode...</div>
+            <div class="date" id="episodeDate"></div>
+        </div>
+
+        <div class="player-section">
+            <div class="video-container" id="videoContainer">
+                <div class="loading">Loading player...</div>
+            </div>
+            
+            <div class="stream-list" id="streamList">
+                <!-- Stream buttons will be generated here -->
+            </div>
+        </div>
+
+        <div class="source-link">
+            <a href="#" id="sourceLink">View Original Source</a>
+        </div>
+    </div>
+
+    <script>
+        // Load streams data
+        async function loadStreams() {
+            try {
+                const response = await fetch('streams.json');
+                const data = await response.json();
+                
+                // Update page content
+                document.getElementById('episodeTitle').textContent = data.episode;
+                document.getElementById('episodeDate').textContent = `Date: ${data.date}`;
+                document.getElementById('sourceLink').href = data.link;
+                
+                // Create stream buttons
+                const streamList = document.getElementById('streamList');
+                const videoContainer = document.getElementById('videoContainer');
+                
+                if (data.streams && data.streams.length > 0) {
+                    // Load first stream by default
+                    loadStream(data.streams[0], 0);
+                    
+                    // Create stream selection buttons
+                    data.streams.forEach((stream, index) => {
+                        const streamItem = document.createElement('div');
+                        streamItem.className = `stream-item ${index === 0 ? 'active' : ''}`;
+                        streamItem.onclick = () => loadStream(stream, index);
+                        
+                        const streamDomain = getDomainFromUrl(stream);
+                        
+                        streamItem.innerHTML = `
+                            <div class="stream-number">${index + 1}</div>
+                            <div class="stream-info">
+                                <div class="stream-title">Stream ${index + 1}</div>
+                                <div class="stream-url">${streamDomain}</div>
+                            </div>
+                        `;
+                        
+                        streamList.appendChild(streamItem);
+                    });
+                } else {
+                    videoContainer.innerHTML = '<div class="error-message">No streams available</div>';
+                }
+                
+            } catch (error) {
+                console.error('Error loading streams:', error);
+                document.getElementById('videoContainer').innerHTML = 
+                    '<div class="error-message">Error loading streams. Please try again later.</div>';
+            }
+        }
+
+        function loadStream(streamUrl, index) {
+            const videoContainer = document.getElementById('videoContainer');
+            const streamItems = document.querySelectorAll('.stream-item');
+            
+            // Update active state
+            streamItems.forEach(item => item.classList.remove('active'));
+            streamItems[index].classList.add('active');
+            
+            // Handle different URL formats
+            let embedUrl = streamUrl;
+            if (streamUrl.startsWith('//')) {
+                embedUrl = 'https:' + streamUrl;
+            }
+            
+            // Create iframe
+            videoContainer.innerHTML = `
+                <iframe 
+                    src="${embedUrl}" 
+                    allow="autoplay; encrypted-media" 
+                    allowfullscreen
+                    loading="lazy"
+                ></iframe>
+            `;
+        }
+
+        function getDomainFromUrl(url) {
+            try {
+                const fullUrl = url.startsWith('//') ? 'https:' + url : url;
+                const domain = new URL(fullUrl).hostname;
+                return domain.replace('www.', '');
+            } catch {
+                return url;
+            }
+        }
+
+        // Load streams when page loads
+        document.addEventListener('DOMContentLoaded', loadStreams);
+    </script>
+</body>
+</html>
