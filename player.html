@@ -62,6 +62,7 @@
             margin-bottom: 20px;
             border-radius: 10px;
             overflow: hidden;
+            background: #000;
         }
 
         .video-container iframe {
@@ -166,6 +167,29 @@
             text-decoration: underline;
         }
 
+        .manual-input {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .manual-input button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 10px;
+        }
+
+        .manual-input button:hover {
+            background: #45a049;
+        }
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 2rem;
@@ -211,65 +235,103 @@
 
         <div class="player-section">
             <div class="video-container" id="videoContainer">
-                <div class="loading">Loading player...</div>
+                <div class="loading">Select a stream below to start watching</div>
             </div>
             
             <div class="stream-list" id="streamList">
                 <!-- Stream buttons will be generated here -->
             </div>
+
+            <div class="manual-input">
+                <p style="color: white; margin-bottom: 10px;">Having issues? Try loading streams manually:</p>
+                <button onclick="loadManualStreams()">Load Demo Streams</button>
+            </div>
         </div>
 
         <div class="source-link">
-            <a href="#" id="sourceLink">View Original Source</a>
+            <a href="#" id="sourceLink" target="_blank">View Original Source</a>
         </div>
     </div>
 
     <script>
+        // Default streams data as fallback
+        const defaultStreams = {
+            "episode": "Bigg Boss 9 Tamil 09-11-2025 | Day 35 | Vijay TV Show",
+            "date": "09-11-2025",
+            "link": "https://www.1tamilcrow.net/bigg-boss-9-tamil-09-11-2025/",
+            "streams": [
+                "https://player.twitch.tv/?channel=arivumani1069&parent=www.1tamilcrow.net",
+                "https://ok.ru/videoembed/12845819693618",
+                "https://ok.ru/videoembed/12845847415346"
+            ]
+        };
+
         // Load streams data
         async function loadStreams() {
             try {
                 const response = await fetch('streams.json');
-                const data = await response.json();
-                
-                // Update page content
-                document.getElementById('episodeTitle').textContent = data.episode;
-                document.getElementById('episodeDate').textContent = `Date: ${data.date}`;
-                document.getElementById('sourceLink').href = data.link;
-                
-                // Create stream buttons
-                const streamList = document.getElementById('streamList');
-                const videoContainer = document.getElementById('videoContainer');
-                
-                if (data.streams && data.streams.length > 0) {
-                    // Load first stream by default
-                    loadStream(data.streams[0], 0);
-                    
-                    // Create stream selection buttons
-                    data.streams.forEach((stream, index) => {
-                        const streamItem = document.createElement('div');
-                        streamItem.className = `stream-item ${index === 0 ? 'active' : ''}`;
-                        streamItem.onclick = () => loadStream(stream, index);
-                        
-                        const streamDomain = getDomainFromUrl(stream);
-                        
-                        streamItem.innerHTML = `
-                            <div class="stream-number">${index + 1}</div>
-                            <div class="stream-info">
-                                <div class="stream-title">Stream ${index + 1}</div>
-                                <div class="stream-url">${streamDomain}</div>
-                            </div>
-                        `;
-                        
-                        streamList.appendChild(streamItem);
-                    });
-                } else {
-                    videoContainer.innerHTML = '<div class="error-message">No streams available</div>';
+                if (!response.ok) {
+                    throw new Error('Failed to fetch streams.json');
                 }
-                
+                const data = await response.json();
+                initializePlayer(data);
             } catch (error) {
                 console.error('Error loading streams:', error);
-                document.getElementById('videoContainer').innerHTML = 
-                    '<div class="error-message">Error loading streams. Please try again later.</div>';
+                // Try alternative path
+                try {
+                    const response = await fetch('./streams.json');
+                    const data = await response.json();
+                    initializePlayer(data);
+                } catch (error2) {
+                    console.error('Error with alternative path:', error2);
+                    document.getElementById('episodeTitle').textContent = 'Streams unavailable - Using demo data';
+                    document.getElementById('episodeDate').textContent = 'Click "Load Demo Streams" below';
+                }
+            }
+        }
+
+        function loadManualStreams() {
+            initializePlayer(defaultStreams);
+        }
+
+        function initializePlayer(data) {
+            // Update page content
+            document.getElementById('episodeTitle').textContent = data.episode;
+            document.getElementById('episodeDate').textContent = `Date: ${data.date}`;
+            document.getElementById('sourceLink').href = data.link;
+            
+            // Create stream buttons
+            const streamList = document.getElementById('streamList');
+            const videoContainer = document.getElementById('videoContainer');
+            
+            streamList.innerHTML = ''; // Clear existing
+            
+            if (data.streams && data.streams.length > 0) {
+                // Create stream selection buttons
+                data.streams.forEach((stream, index) => {
+                    const streamItem = document.createElement('div');
+                    streamItem.className = `stream-item`;
+                    streamItem.onclick = () => loadStream(stream, index);
+                    
+                    const streamDomain = getDomainFromUrl(stream);
+                    
+                    streamItem.innerHTML = `
+                        <div class="stream-number">${index + 1}</div>
+                        <div class="stream-info">
+                            <div class="stream-title">Stream ${index + 1}</div>
+                            <div class="stream-url">${streamDomain}</div>
+                        </div>
+                    `;
+                    
+                    streamList.appendChild(streamItem);
+                });
+
+                // Auto-load first stream
+                if (data.streams[0]) {
+                    loadStream(data.streams[0], 0);
+                }
+            } else {
+                videoContainer.innerHTML = '<div class="error-message">No streams available</div>';
             }
         }
 
@@ -279,7 +341,9 @@
             
             // Update active state
             streamItems.forEach(item => item.classList.remove('active'));
-            streamItems[index].classList.add('active');
+            if (streamItems[index]) {
+                streamItems[index].classList.add('active');
+            }
             
             // Handle different URL formats
             let embedUrl = streamUrl;
@@ -291,7 +355,7 @@
             videoContainer.innerHTML = `
                 <iframe 
                     src="${embedUrl}" 
-                    allow="autoplay; encrypted-media" 
+                    allow="autoplay; encrypted-media; fullscreen" 
                     allowfullscreen
                     loading="lazy"
                 ></iframe>
